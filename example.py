@@ -4,6 +4,7 @@ from tqdm import tqdm
 from FastSpike.Network import Network
 from FastSpike.NeuronTypes import LIF
 from FastSpike.Connections import LocallyConnected
+from FastSpike.Learning import STDP
 
 class MyNetwork(Network):
     def __init__(
@@ -38,9 +39,13 @@ class MyNetwork(Network):
 
 if __name__ == "__main__":
     time = 100
-    net = MyNetwork(LIF(dt=1), batch_size= 3)
+    net = MyNetwork(
+        neurons_type= LIF(dt=1),
+        learning_rule= STDP(nu=0.01),
+        batch_size= 3,
+    )
     print(net, net.weight, net.adjacency)
-    input_spikes = torch.tensor([True]*484+[False]*4000)
+    input_spikes = torch.tensor([[True]*484+[False]*4000]*3)
     p, v = net(input_spikes=input_spikes)
     print(p,v, p.shape, v.shape)
     for i in tqdm(range(100)):

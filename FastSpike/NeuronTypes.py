@@ -33,12 +33,10 @@ class NeuronType(ABC, torch.nn.Module):
         self.dt = dt
 
         self.voltage_decay_factor = None
-        self.traces_additive = traces_additive  # Whether to record spike traces additively.
-        self.register_buffer("s", torch.ByteTensor())  # Spike occurrences.
+        self.traces_additive = traces_additive 
 
-        self.register_buffer("eligibility", torch.Tensor())  # Firing traces.
-        self.register_buffer("tc_trace", torch.tensor(tc_trace))  # Time constant of spike trace decay.
-        self.register_buffer("trace_scale", torch.tensor(trace_scale))  # Scaling factor for spike trace.
+        self.register_buffer("tc_trace", torch.tensor(tc_trace))  
+        self.register_buffer("trace_scale", torch.tensor(trace_scale))
 
 
     def update(self, spikes: torch.Tensor) -> None:
@@ -68,8 +66,6 @@ class NeuronType(ABC, torch.nn.Module):
         Compute decay factors based on time constants.
         """
         self.trace_decay = torch.exp(-self.dt / self.tc_trace)  # Spike trace decay (per timestep).
-
-
 
 
 
