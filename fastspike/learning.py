@@ -21,7 +21,16 @@ class LearningRule(ABC):
         Args:
             network ([FastSpike.Network]): Network's object
         """
+        self.update_eligibility(network)
 
+
+    def update_eligibility(self, network):
+        # Decay eligibility trace
+        network.eligibility *= network.neurons.trace_decay
+        if network.neurons.traces_additive:
+            network.eligibility += network.neurons.trace_scale * network.spikes
+        else:
+            network.eligibility.masked_fill_(network.spikes, network.neurons.trace_scale)
 
 class STDP(LearningRule):
     r"""
@@ -51,12 +60,13 @@ class STDP(LearningRule):
         Args:
             network ([FastSpike.Network]): Network's object
         """
+        super().__call__(network)
         # Post-Pre activities
         if self.nu[0]:
             network.weight -= self.batch_integration(
                 (
                     network.spikes.unsqueeze(-2)
-                    * network.neurons.eligibility.unsqueeze(-1)
+                    * network.eligibility.unsqueeze(-1)
                     * network.weight
                 ),
                 dim=0
@@ -66,7 +76,7 @@ class STDP(LearningRule):
             network.weight += self.batch_integration(
                 (
                     network.spikes.unsqueeze(-1)
-                    * network.neurons.eligibility.unsqueeze(-2)
+                    * network.eligibility.unsqueeze(-2)
                     * network.weight
                 ),
                 dim=0

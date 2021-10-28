@@ -103,7 +103,10 @@ class Network(torch.nn.Module):
              torch.zeros(self.batch_size, self.n)
         ) 
         if self.learning_rule is not None:
-            self.neurons.eligibility = torch.zeros_like(self.spikes.float())
+            self.register_buffer(
+            "eligibility", 
+            torch.zeros_like(self.spikes.float())
+        )
     
     def forward(
         self,
@@ -146,7 +149,7 @@ class Network(torch.nn.Module):
         self.refractory.masked_fill_(self.spikes, self.neurons.refractory_period)
         # Learning process
         if self.training and self.learning_rule is not None:
-            self.neurons.update(self.spikes)
+            # Apply the learning rule and update weights
             self.learning_rule(self)
 
         return self.spikes, self.voltage
