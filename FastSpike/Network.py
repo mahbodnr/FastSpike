@@ -3,9 +3,9 @@ from typing import Tuple, Optional
 import torch
 from torch.nn import Parameter
 
-from FastSpike.NeuronGroup import NeuronGroup 
-from FastSpike.NeuronTypes import NeuronType
-from FastSpike.Learning import LearningRule
+from FastSpike.neurons import NeuronGroup 
+from FastSpike.neurons import NeuronType
+from FastSpike.learning import LearningRule
 
 
 class Network(torch.nn.Module):
