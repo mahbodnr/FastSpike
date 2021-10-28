@@ -10,10 +10,12 @@ class MyNetwork(Network):
         self,
         neurons_type,
         learning_rule= None,
+        batch_size= 1,
     ) -> None:
         super().__init__(
             neurons_type= neurons_type,
             learning_rule= learning_rule,
+            batch_size= batch_size
         )
         self.inp = self.group(1*22*22)
         self.layer1 = self.group(10*20*20)
@@ -36,11 +38,11 @@ class MyNetwork(Network):
 
 if __name__ == "__main__":
     time = 100
-    net = MyNetwork(LIF(dt=1))
+    net = MyNetwork(LIF(dt=1), batch_size= 3)
     print(net, net.weight, net.adjacency)
     input_spikes = torch.tensor([True]*484+[False]*4000)
     p, v = net(input_spikes=input_spikes)
-    print(p,v)
+    print(p,v, p.shape, v.shape)
     for i in tqdm(range(100)):
         for _ in (range(time)):
             net()

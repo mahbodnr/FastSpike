@@ -7,8 +7,8 @@ def RandomConnection(
     n_source: int,
     n_target: int, 
     connection_probability: float,
-    w_min: Optional(float) = 0.,
-    w_max: Optional(float) = 1.,
+    w_min: Optional[float] = 0.,
+    w_max: Optional[float] = 1.,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
     r"""
     Connect every two neurons in a connection with a determined probability and a random weight.
@@ -37,8 +37,8 @@ def LocallyConnected(
     n_channels: int, 
     filter_size: Union[int, Tuple[int, int]], 
     stride: Union[int, Tuple[int, int]],
-    w_min: Optional(float) = 0.,
-    w_max: Optional(float) = 1.,
+    w_min: Optional[float] = 0.,
+    w_max: Optional[float] = 1.,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
     
     r"""
@@ -102,7 +102,7 @@ def LocallyConnected(
 def FullyConnected(
     n_source: int,
     n_target: int, 
-    weights_value: Optional(float) = 1.,
+    weights_value: Optional[float] = 1.,
     ):
     r"""
     Connects every neurons in a connection with a fixed weight value.
@@ -122,8 +122,8 @@ def FullyConnected(
 def UniformFullyConnected(    
     n_source: int,
     n_target: int,
-    w_min: Optional(float) = 0.,
-    w_max: Optional(float) = 1., 
+    w_min: Optional[float] = 0.,
+    w_max: Optional[float] = 1., 
     ):
     r"""
     Connects every neurons in a connection with a random weight from a Uniform Distribution.
@@ -146,8 +146,8 @@ def UniformFullyConnected(
 def NormalFullyConnected(    
     n_source: int,
     n_target: int,
-    mean: Optional(float) = 0.,
-    std: Optional(float) = 1.,
+    mean: Optional[float] = 0.,
+    std: Optional[float] = 1.,
     ):
     r"""
     Connects every neurons in a connection with a random weight from a Normal Distribution.

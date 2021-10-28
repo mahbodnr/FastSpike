@@ -1,11 +1,11 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 import torch
 from torch.nn import Parameter
 
-from NeuronGroup import NeuronGroup 
-from NeuronTypes import NeuronType
-from Learning import LearningRule
+from FastSpike.NeuronGroup import NeuronGroup 
+from FastSpike.NeuronTypes import NeuronType
+from FastSpike.Learning import LearningRule
 
 
 class Network(torch.nn.Module):
@@ -16,8 +16,8 @@ class Network(torch.nn.Module):
     def __init__(
         self,
         neurons_type: NeuronType,
-        learning_rule: LearningRule = None,
-        # batch_size: int = 1,
+        learning_rule: Optional[LearningRule] = None,
+        batch_size: Optional[int] = 1,
     ) -> None:
         r"""
         Initializes network object.
@@ -25,12 +25,14 @@ class Network(torch.nn.Module):
         Args:
             neurons_type (NeuronType): The model of the neurons in the network
             learning_rule (LearningRule, optional): Applied learning rule to the network. Defaults to None.
+            batch_size (int, optional): Size of each mini-batch.
         """
         super().__init__()
 
         self.neurons = neurons_type
         self.dt = self.neurons.dt
         self.learning_rule = learning_rule
+        self.batch_size = batch_size
 
         self.n = 0
 
@@ -88,9 +90,9 @@ class Network(torch.nn.Module):
         """
         self.weight = Parameter(torch.zeros(self.n, self.n), requires_grad= False)
         self.adjacency = Parameter(torch.zeros(self.n, self.n), requires_grad= False)
-        self.voltage = self.neurons.v_rest * torch.ones(self.n)
-        self.spikes = torch.zeros(self.n, dtype= torch.bool)
-        self.refractory = torch.zeros(self.n)
+        self.voltage = self.neurons.v_rest * torch.ones(self.batch_size, self.n)
+        self.spikes = torch.zeros(self.batch_size, self.n, dtype= torch.bool)
+        self.refractory = torch.zeros(self.batch_size, self.n)
 
     
     def forward(
@@ -134,7 +136,7 @@ class Network(torch.nn.Module):
         self.refractory.masked_fill_(self.spikes, self.neurons.refractory_period)
         # Learning process
         if self.training and self.learning_rule is not None:
-            self.learning_rule(self.weight, self.adjacency, self.spikes, self.neurons)
+            self.learning_rule(self)
 
         return self.spikes, self.voltage
             
