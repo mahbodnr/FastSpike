@@ -1,10 +1,10 @@
 import torch
 from tqdm import tqdm
 
-from FastSpike.network import Network
-from FastSpike.neurons import LIF
-from FastSpike.connections import LocallyConnected
-from FastSpike.learning import STDP
+from fastspike.network import Network
+from fastspike.neurons import LIF
+from fastspike.connections import LocallyConnected
+from fastspike.learning import STDP
 
 class MyNetwork(Network):
     def __init__(

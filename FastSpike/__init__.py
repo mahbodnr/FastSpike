@@ -1,4 +1,4 @@
-from FastSpike import(
+from fastspike import(
     network,
     connections,
     learning,
