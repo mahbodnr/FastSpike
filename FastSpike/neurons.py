@@ -131,5 +131,8 @@ class LIF(NeuronType):
         Compute decay factors based on time constants.
         """
         super().compute_decay_factors()
-        self.voltage_decay_factor = torch.exp(-self.dt / self.tc_decay)  # Neuron voltage decay (per timestep).
+        self.register_buffer(
+            "voltage_decay_factor", 
+            torch.tensor(torch.exp(-self.dt / self.tc_decay), dtype=torch.float)
+        ) # Neuron voltage decay (per timestep).
 

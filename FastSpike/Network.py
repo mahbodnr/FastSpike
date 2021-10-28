@@ -90,9 +90,18 @@ class Network(torch.nn.Module):
         """
         self.weight = Parameter(torch.zeros(self.n, self.n), requires_grad= False)
         self.adjacency = Parameter(torch.zeros(self.n, self.n), requires_grad= False)
-        self.voltage = self.neurons.v_rest * torch.ones(self.batch_size, self.n)
-        self.spikes = torch.zeros(self.batch_size, self.n, dtype= torch.bool)
-        self.refractory = torch.zeros(self.batch_size, self.n)
+        self.register_buffer(
+            "voltage", 
+            self.neurons.v_rest * torch.ones(self.batch_size, self.n)
+        ) 
+        self.register_buffer(
+            "spikes", 
+            torch.zeros(self.batch_size, self.n, dtype= torch.bool)
+        ) 
+        self.register_buffer(
+            "refractory", 
+             torch.zeros(self.batch_size, self.n)
+        ) 
         if self.learning_rule is not None:
             self.neurons.eligibility = torch.zeros_like(self.spikes.float())
     
