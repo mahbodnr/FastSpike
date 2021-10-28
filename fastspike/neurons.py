@@ -38,9 +38,9 @@ class NeuronType(ABC, torch.nn.Module):
         super().__init__()
         self.dt = dt
 
-        self.voltage_decay_factor = None
         self.traces_additive = traces_additive 
 
+        self.register_buffer("voltage_decay_factor", None)  
         self.register_buffer("tc_trace", torch.tensor(tc_trace))  
         self.register_buffer("trace_scale", torch.tensor(trace_scale))
 
