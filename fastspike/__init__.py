@@ -1,7 +1,6 @@
-from fastspike import(
+from fastspike import (
     network,
     connections,
     learning,
     neurons,
 )
-

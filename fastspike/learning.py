@@ -4,15 +4,16 @@ from typing import Union, Tuple, Optional, Sequence
 import torch
 from torch.nn.modules.utils import _pair
 
+
 class LearningRule(ABC):
     r"""
     Abstract object for Learning rule
     """
+
     def __init__(self):
         r"""
         Initialize learning rule object
         """
-
 
     def __call__(self, network):
         r"""
@@ -23,19 +24,22 @@ class LearningRule(ABC):
         """
         self.update_eligibility(network)
 
-
     def update_eligibility(self, network):
         # Decay eligibility trace
         network.eligibility *= network.neurons.trace_decay
         if network.neurons.traces_additive:
             network.eligibility += network.neurons.trace_scale * network.spikes
         else:
-            network.eligibility.masked_fill_(network.spikes, network.neurons.trace_scale)
+            network.eligibility.masked_fill_(
+                network.spikes, network.neurons.trace_scale
+            )
+
 
 class STDP(LearningRule):
     r"""
     Spike-timing-dependent plasticity (STDP) learning rule.
     """
+
     def __init__(
         self,
         nu: Union[float, Sequence[float]],
@@ -51,7 +55,6 @@ class STDP(LearningRule):
         super().__init__()
         self.nu = _pair(nu)
         self.batch_integration = batch_integration
-
 
     def __call__(self, network):
         r"""
@@ -69,7 +72,7 @@ class STDP(LearningRule):
                     * network.eligibility.unsqueeze(-1)
                     * network.weight
                 ),
-                dim=0
+                dim=0,
             )
         # Pre-Post activities.
         if self.nu[1]:
@@ -79,5 +82,5 @@ class STDP(LearningRule):
                     * network.eligibility.unsqueeze(-2)
                     * network.weight
                 ),
-                dim=0
+                dim=0,
             )

@@ -10,7 +10,5 @@ setup(
     author_email="MahbodNouri@gmail.com",
     packages=find_packages(),
     zip_safe=False,
-    install_requires=[
-        "torch"
-    ],
+    install_requires=["torch"],
 )

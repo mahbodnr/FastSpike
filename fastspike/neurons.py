@@ -3,6 +3,7 @@ from typing import Union
 
 import torch
 
+
 class NeuronGroup(torch.nn.Module):
     def __init__(self, n):
         super().__init__()
@@ -27,23 +28,22 @@ class NeuronType(ABC, torch.nn.Module):
 
         Args:
             dt (int): Timestep. Indicates amount of time passed in each step of simulation.
-            tc_trace (Union[float, torch.Tensor], optional): Neurons trace time constant in ms. used to update 
+            tc_trace (Union[float, torch.Tensor], optional): Neurons trace time constant in ms. used to update
             eligibility trace every timepoint .Defaults to 20.0.
             trace_scale (Union[float, torch.Tensor], optional): If traces_additive is True, this value will be added to
             neurons' eligibility trace after each spike. If traces_additive is False, neurons' eligibility trace will be
             set to this this value. Defaults to 1.0.
-            traces_additive (bool, optional): Whether to add trace_scale to neurons' entitlement trace after spikes 
+            traces_additive (bool, optional): Whether to add trace_scale to neurons' entitlement trace after spikes
             occur or set them to the trace_scale value. Defaults to False.
         """
         super().__init__()
         self.dt = dt
 
-        self.traces_additive = traces_additive 
+        self.traces_additive = traces_additive
 
-        self.register_buffer("voltage_decay_factor", None)  
-        self.register_buffer("tc_trace", torch.tensor(tc_trace))  
+        self.register_buffer("voltage_decay_factor", None)
+        self.register_buffer("tc_trace", torch.tensor(tc_trace))
         self.register_buffer("trace_scale", torch.tensor(trace_scale))
-
 
     def update(self, spikes: torch.Tensor) -> None:
         """
@@ -60,7 +60,6 @@ class NeuronType(ABC, torch.nn.Module):
         else:
             self.eligibility.masked_fill_(spikes, self.trace_scale)
 
-
     def reset(self) -> None:
         r"""
         Reset all state variabels
@@ -71,8 +70,9 @@ class NeuronType(ABC, torch.nn.Module):
         r"""
         Compute decay factors based on time constants.
         """
-        self.trace_decay = torch.exp(-self.dt / self.tc_trace)  # Spike trace decay (per timestep).
-
+        self.trace_decay = torch.exp(
+            -self.dt / self.tc_trace
+        )  # Spike trace decay (per timestep).
 
 
 class LIF(NeuronType):
@@ -97,12 +97,12 @@ class LIF(NeuronType):
 
         Args:
             dt (int): Timestep. Indicates amount of time passed in each step of simulation.
-            tc_trace (Union[float, torch.Tensor], optional): Neurons trace time constant in ms. used to update 
+            tc_trace (Union[float, torch.Tensor], optional): Neurons trace time constant in ms. used to update
             eligibility trace every timepoint .Defaults to 20.0.
             trace_scale (Union[float, torch.Tensor], optional): If traces_additive is True, this value will be added to
             neurons' eligibility trace after each spike. If traces_additive is False, neurons' eligibility trace will be
             set to this this value. Defaults to 1.0.
-            traces_additive (bool, optional): Whether to add trace_scale to neurons' entitlement trace after spikes 
+            traces_additive (bool, optional): Whether to add trace_scale to neurons' entitlement trace after spikes
             occur or set them to the trace_scale value. Defaults to False.
             v_thresh (Union[float, torch.Tensor], optional): Neurons' threshold voltage in mV. Defaults to -52.0.
             v_rest (Union[float, torch.Tensor], optional): Neurons' rest voltage in mV. Defaults to -65.0.
@@ -111,18 +111,27 @@ class LIF(NeuronType):
             tc_decay (Union[float, torch.Tensor], optional): Voltage decay time constant in ms. Defaults to 100.0.
         """
 
-
         super().__init__(
             dt=dt,
-            traces_additive= traces_additive,
-            tc_trace= tc_trace,
-            trace_scale= trace_scale,
+            traces_additive=traces_additive,
+            tc_trace=tc_trace,
+            trace_scale=trace_scale,
         )
-        self.register_buffer("v_rest", torch.tensor(v_rest, dtype=torch.float))  # Rest voltage.
-        self.register_buffer("v_reset", torch.tensor(v_reset, dtype=torch.float))  # Post-spike reset voltage.
-        self.register_buffer("v_thresh", torch.tensor(v_thresh, dtype=torch.float))  # Spike threshold voltage.
-        self.register_buffer("refractory_period", torch.tensor(refractory_period, dtype=torch.int32))  # Post-spike refractory period.
-        self.register_buffer("tc_decay", torch.tensor(tc_decay, dtype=torch.float))  # Time constant of neuron voltage decay.
+        self.register_buffer(
+            "v_rest", torch.tensor(v_rest, dtype=torch.float)
+        )  # Rest voltage.
+        self.register_buffer(
+            "v_reset", torch.tensor(v_reset, dtype=torch.float)
+        )  # Post-spike reset voltage.
+        self.register_buffer(
+            "v_thresh", torch.tensor(v_thresh, dtype=torch.float)
+        )  # Spike threshold voltage.
+        self.register_buffer(
+            "refractory_period", torch.tensor(refractory_period, dtype=torch.int32)
+        )  # Post-spike refractory period.
+        self.register_buffer(
+            "tc_decay", torch.tensor(tc_decay, dtype=torch.float)
+        )  # Time constant of neuron voltage decay.
 
         self.compute_decay_factors()
 
@@ -132,7 +141,6 @@ class LIF(NeuronType):
         """
         super().compute_decay_factors()
         self.register_buffer(
-            "voltage_decay_factor", 
-            torch.tensor(torch.exp(-self.dt / self.tc_decay), dtype=torch.float)
-        ) # Neuron voltage decay (per timestep).
-
+            "voltage_decay_factor",
+            torch.tensor(torch.exp(-self.dt / self.tc_decay), dtype=torch.float),
+        )  # Neuron voltage decay (per timestep).
