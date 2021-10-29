@@ -34,25 +34,43 @@ class Network(torch.nn.Module):
         self.learning_rule = learning_rule
         self.batch_size = batch_size
 
-        self.n = 0
+        self.weight = Parameter(torch.Tensor(0, 0), requires_grad=False)
+        self.adjacency = Parameter(torch.Tensor(0, 0), requires_grad=False)
+        self.register_buffer(
+            "voltage", self.neurons.v_rest * torch.ones(self.batch_size, 0)
+        )
+        self.register_buffer(
+            "spikes", torch.zeros(self.batch_size, 0, dtype=torch.bool)
+        )
+        self.register_buffer("refractory", torch.zeros(self.batch_size, 0))
+        if self.learning_rule is not None:
+            self.register_buffer("eligibility", torch.zeros_like(self.spikes.float()))
 
-    def group(self, N: int) -> NeuronGroup:
+    def group(self, N: int, name: Optional[str] = None) -> None:
         r"""
         Add a neuron group to the network
 
         Args:
             N (int): Size of the group (number of neurons)
+            name(str, optional): If not None, set the neuron group to a class attribute with this name.
 
         Returns:
-            NeuronGroup
+            NeuronGroup instance.
         """
-        if hasattr(self, "weight"):
-            raise Exception(
-                '"group" method cannot be called after weight has been constructed. Use "add_group" instead.'
-            )
         neuron_group = NeuronGroup(N)
-        neuron_group.idx = slice(self.n, self.n + N)
-        self.n += N
+        neuron_group.idx = slice(len(self.weight), len(self.weight) + N)
+        if name is not None:
+            assert not hasattr(self, name), f"Attribute name {name} already exists."
+            setattr(self, name, neuron_group)
+
+        self.weight.data = torch.nn.functional.pad(self.weight, (0, N, 0, N))
+        self.adjacency.data = torch.nn.functional.pad(self.adjacency, (0, N, 0, N))
+        self.spikes.data = torch.nn.functional.pad(self.spikes, (0, N))
+        self.voltage.data = torch.nn.functional.pad(self.voltage, (0, N))
+        self.refractory.data = torch.nn.functional.pad(self.refractory, (0, N))
+        if self.learning_rule is not None:
+            self.eligibility.data = torch.nn.functional.pad(self.eligibility, (0, N))
+
         return neuron_group
 
     def connect(
@@ -86,46 +104,6 @@ class Network(torch.nn.Module):
             self.adjacency[source.idx, target.idx] = torch.ones(
                 source.n, target.n, dtype=torch.bool
             )
-
-    def structure(self) -> None:
-        """
-        Design the architecture of the network by adding connections to neuron groups.
-        """
-        self.weight = Parameter(torch.zeros(self.n, self.n), requires_grad=False)
-        self.adjacency = Parameter(torch.zeros(self.n, self.n), requires_grad=False)
-        self.register_buffer(
-            "voltage", self.neurons.v_rest * torch.ones(self.batch_size, self.n)
-        )
-        self.register_buffer(
-            "spikes", torch.zeros(self.batch_size, self.n, dtype=torch.bool)
-        )
-        self.register_buffer("refractory", torch.zeros(self.batch_size, self.n))
-        if self.learning_rule is not None:
-            self.register_buffer("eligibility", torch.zeros_like(self.spikes.float()))
-
-    def add_group(self, name: str, N: int) -> None:
-        r"""
-        Add a neuron group to the network
-
-        Args:
-            name(str): The name of the group attribute.
-            N (int): Size of the group (number of neurons)
-        """
-        neuron_group = NeuronGroup(N)
-        neuron_group.idx = slice(self.n, self.n + N)
-        if hasattr(self, name):
-            raise ValueError(f"Attribute name {name} already exists.")
-        setattr(self, name, neuron_group)
-
-        self.weight.data = torch.nn.functional.pad(self.weight, (0, N, 0, N))
-        self.adjacency.data = torch.nn.functional.pad(self.adjacency, (0, N, 0, N))
-        self.spikes.data = torch.nn.functional.pad(self.spikes, (0, N))
-        self.voltage.data = torch.nn.functional.pad(self.voltage, (0, N))
-        self.refractory.data = torch.nn.functional.pad(self.refractory, (0, N))
-        if self.learning_rule is not None:
-            self.eligibility.data = torch.nn.functional.pad(self.eligibility, (0, N))
-
-        self.n += N
 
     def forward(
         self,

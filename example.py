@@ -19,13 +19,10 @@ class MyNetwork(Network):
             learning_rule=learning_rule,
             batch_size=batch_size,
         )
+
         self.inp = self.group(1 * 22 * 22)
         self.layer1 = self.group(10 * 20 * 20)
 
-        self.structure()
-
-    def structure(self) -> None:
-        super().structure()
         self.connect(
             self.inp,
             self.layer1,
@@ -48,7 +45,7 @@ if __name__ == "__main__":
         learning_rule=STDP(nu=0.01),
         batch_size=batch_size,
     )
-    net.add_group("layer2", 10)
+    net.group(10, "layer2")
     net.connect(net.layer1, net.layer2, *FullyConnected(net.layer1.n, net.layer2.n, 1))
     print(net)
     input_spikes = torch.tensor([[1] * len(net.weight)] * batch_size)
