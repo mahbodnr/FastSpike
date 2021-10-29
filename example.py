@@ -54,3 +54,4 @@ if __name__ == "__main__":
     for i in tqdm(range(100)):
         for _ in range(time):
             net()
+            net.reset()

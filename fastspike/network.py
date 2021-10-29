@@ -148,3 +148,9 @@ class Network(torch.nn.Module):
             self.learning_rule(self)
 
         return self.spikes, self.voltage
+
+    def reset(self):
+        self.voltage.zero_()
+        self.spikes.zero_()
+        self.refractory.zero_()
+        self.eligibility.zero_()

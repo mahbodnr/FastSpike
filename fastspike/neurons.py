@@ -60,12 +60,6 @@ class NeuronType(ABC, torch.nn.Module):
         else:
             self.eligibility.masked_fill_(spikes, self.trace_scale)
 
-    def reset(self) -> None:
-        r"""
-        Reset all state variabels
-        """
-        self.eligibility.zero_()  # Spike traces.
-
     def compute_decay_factors(self) -> None:
         r"""
         Compute decay factors based on time constants.
@@ -142,5 +136,5 @@ class LIF(NeuronType):
         super().compute_decay_factors()
         self.register_buffer(
             "voltage_decay_factor",
-            torch.tensor(torch.exp(-self.dt / self.tc_decay), dtype=torch.float),
+            torch.exp(-self.dt / self.tc_decay),
         )  # Neuron voltage decay (per timestep).
