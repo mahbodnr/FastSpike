@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 from fastspike.network import Network
 from fastspike.neurons import LIF
-from fastspike.connections import LocallyConnected
+from fastspike.connections import LocallyConnected, FullyConnected
 from fastspike.learning import STDP
 
 
@@ -42,16 +42,17 @@ class MyNetwork(Network):
 
 if __name__ == "__main__":
     time = 100
+    batch_size = 3
     net = MyNetwork(
         neurons_type=LIF(dt=1),
         learning_rule=STDP(nu=0.01),
-        batch_size=3,
+        batch_size=batch_size,
     )
-    print(net, net.weight, net.adjacency)
-    input_spikes = torch.tensor([[True] * 484 + [False] * 4000] * 3)
-    p, v = net(input_spikes=input_spikes)
-    print(p, v, p.shape, v.shape)
+    net.add_group("layer2", 10)
+    net.connect(net.layer1, net.layer2, *FullyConnected(net.layer1.n, net.layer2.n, 1))
+    print(net)
+    input_spikes = torch.tensor([[1] * len(net.weight)] * batch_size)
     for i in tqdm(range(100)):
         for _ in range(time):
-            net()
+            net(input_spikes=input_spikes)
             net.reset()

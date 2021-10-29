@@ -46,6 +46,10 @@ class Network(torch.nn.Module):
         Returns:
             NeuronGroup
         """
+        if hasattr(self, "weight"):
+            raise Exception(
+                '"group" method cannot be called after weight has been constructed. Use "add_group" instead.'
+            )
         neuron_group = NeuronGroup(N)
         neuron_group.idx = slice(self.n, self.n + N)
         self.n += N
@@ -98,6 +102,30 @@ class Network(torch.nn.Module):
         self.register_buffer("refractory", torch.zeros(self.batch_size, self.n))
         if self.learning_rule is not None:
             self.register_buffer("eligibility", torch.zeros_like(self.spikes.float()))
+
+    def add_group(self, name: str, N: int) -> None:
+        r"""
+        Add a neuron group to the network
+
+        Args:
+            name(str): The name of the group attribute.
+            N (int): Size of the group (number of neurons)
+        """
+        neuron_group = NeuronGroup(N)
+        neuron_group.idx = slice(self.n, self.n + N)
+        if hasattr(self, name):
+            raise ValueError(f"Attribute name {name} already exists.")
+        setattr(self, name, neuron_group)
+
+        self.weight.data = torch.nn.functional.pad(self.weight, (0, N, 0, N))
+        self.adjacency.data = torch.nn.functional.pad(self.adjacency, (0, N, 0, N))
+        self.spikes.data = torch.nn.functional.pad(self.spikes, (0, N))
+        self.voltage.data = torch.nn.functional.pad(self.voltage, (0, N))
+        self.refractory.data = torch.nn.functional.pad(self.refractory, (0, N))
+        if self.learning_rule is not None:
+            self.eligibility.data = torch.nn.functional.pad(self.eligibility, (0, N))
+
+        self.n += N
 
     def forward(
         self,
