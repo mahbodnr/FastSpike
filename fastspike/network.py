@@ -57,8 +57,7 @@ class Network(torch.nn.Module):
         Returns:
             NeuronGroup instance.
         """
-        neuron_group = NeuronGroup(N)
-        neuron_group.idx = slice(len(self.weight), len(self.weight) + N)
+        neuron_group = NeuronGroup(N, slice(len(self.weight), len(self.weight) + N))
         if name is not None:
             assert not hasattr(self, name), f"Attribute name {name} already exists."
             setattr(self, name, neuron_group)

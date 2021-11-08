@@ -5,10 +5,10 @@ import torch
 
 
 class NeuronGroup(torch.nn.Module):
-    def __init__(self, n):
+    def __init__(self, n, idx):
         super().__init__()
         self.n = n
-        self.idx = None
+        self.idx = idx
 
 
 class NeuronType(ABC, torch.nn.Module):
