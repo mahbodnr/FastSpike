@@ -11,3 +11,6 @@ Here is a benchmark of FastSpike against BindsNET. The benchmark is done on a Te
 ![](docs/layerwise_gpu.png)
 ## Fixed number of layers, Different layer sizes
 ![](docs/sizewise_gpu.png)
+
+# Julia
+Also see [FastSpike.jl](https://github.com/mahbodnr/FastSpike.jl) for Julia implementation.
