@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Union, Tuple, Optional, Sequence
+from typing import Union, Sequence
 
 import torch
 from torch.nn.modules.utils import _pair
@@ -43,18 +43,15 @@ class STDP(LearningRule):
     def __init__(
         self,
         nu: Union[float, Sequence[float]],
-        batch_integration: callable = torch.mean,
     ) -> None:
         """
         Initialize STD learning rule
 
         Args:
             nu (Union[float, Sequence[float]]): Learning rate for Post-Pre(LTD) and Pre-Post(LTP) events.
-            batch_integration (callable): Method used for integrating weight changes along the batches axis.
         """
         super().__init__()
         self.nu = _pair(nu)
-        self.batch_integration = batch_integration
 
     def __call__(self, network):
         r"""
@@ -64,23 +61,18 @@ class STDP(LearningRule):
             network ([FastSpike.Network]): Network's object
         """
         super().__call__(network)
+        weight_update = torch.zeros_like(network.weight)
+        # Pre-Post activities
+        weight_update += self.nu[1] * torch.einsum(
+            "bix,bxj->ij",
+            network.eligibility.unsqueeze(-1),
+            network.spikes.float().unsqueeze(-2),
+        )
         # Post-Pre activities
-        if self.nu[0]:
-            network.weight -= self.batch_integration(
-                (
-                    network.spikes.unsqueeze(-2)
-                    * network.eligibility.unsqueeze(-1)
-                    * network.weight
-                ),
-                dim=0,
-            )
-        # Pre-Post activities.
-        if self.nu[1]:
-            network.weight += self.batch_integration(
-                (
-                    network.spikes.unsqueeze(-1)
-                    * network.eligibility.unsqueeze(-2)
-                    * network.weight
-                ),
-                dim=0,
-            )
+        weight_update += self.nu[0] * torch.einsum(
+            "bix,bxj->ij",
+            network.spikes.float().unsqueeze(-1),
+            network.eligibility.unsqueeze(-2),
+        )
+
+        network.weight += weight_update * network.adjacency
