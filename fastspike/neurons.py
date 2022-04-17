@@ -129,6 +129,14 @@ class LIF(NeuronType):
 
         self.compute_decay_factors()
 
+    def init_group_params(self, batch_size):
+        r"""
+        Initializes LIF neuron group parameters.
+        """
+        self.register_buffer(
+            "refractory", torch.zeros(batch_size, 0)
+        )  # Refractory period counter for each neuron.
+
     def compute_decay_factors(self) -> None:
         r"""
         Compute decay factors based on time constants.
@@ -138,3 +146,47 @@ class LIF(NeuronType):
             "voltage_decay_factor",
             torch.exp(-self.dt / self.tc_decay),
         )  # Neuron voltage decay (per timestep).
+
+    def _add_group(self, N: int) -> None:
+        r"""
+        Add new neurons to the group
+
+        Args:
+            N (int): Number of neurons
+        """
+        self.refractory.data = torch.nn.functional.pad(self.refractory, (0, N))
+
+    def reset(self):
+        self.refractory.zero_()
+
+    def forward(self, weight, spikes, voltage, input_spikes, input_voltages) -> None:
+        r"""
+        Update voltage and spikes of LIF neurons.
+        """
+        # Decay voltages.
+        if self.voltage_decay_factor is not None:
+            new_voltage = (
+                self.voltage_decay_factor * (voltage - self.v_rest) + self.v_rest
+            )
+        # External voltage:
+        if input_voltages is not None:
+            input_voltages.masked_fill_(self.refractory > 0, 0.0)
+            new_voltage += input_voltages
+        # Evoke spikes
+        new_spikes = new_voltage >= self.v_thresh
+        # External spikes
+        if input_spikes is not None:
+            new_spikes.logical_or_(input_spikes.bool())
+        # update voltages
+        new_voltage += new_spikes.float() @ weight  # + self.bias
+        new_voltage.masked_fill_(
+            self.refractory > 0, self.v_rest
+        )  # reset the voltage of the neurons in the refractory period
+        new_voltage.masked_fill_(
+            new_spikes, self.v_reset
+        )  # change the voltage of spiked neurons to v_reset
+        # Update refractory timepoints
+        self.refractory -= self.dt
+        self.refractory.masked_fill_(new_spikes, self.refractory_period)
+
+        return new_spikes, new_voltage

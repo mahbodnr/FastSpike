@@ -29,10 +29,11 @@ class Network(torch.nn.Module):
         """
         super().__init__()
 
+        self.batch_size = batch_size
         self.neurons = neurons_type
+        self.neurons.init_group_params(self.batch_size)
         self.dt = self.neurons.dt
         self.learning_rule = learning_rule
-        self.batch_size = batch_size
 
         self.weight = Parameter(torch.Tensor(0, 0), requires_grad=False)
         self.adjacency = Parameter(torch.Tensor(0, 0), requires_grad=False)
@@ -42,11 +43,10 @@ class Network(torch.nn.Module):
         self.register_buffer(
             "spikes", torch.zeros(self.batch_size, 0, dtype=torch.bool)
         )
-        self.register_buffer("refractory", torch.zeros(self.batch_size, 0))
         if self.learning_rule is not None:
             self.register_buffer("eligibility", torch.zeros_like(self.spikes.float()))
 
-    def group(self, N: int, name: Optional[str] = None) -> None:
+    def group(self, N: int, name: Optional[str] = None) -> NeuronGroup:
         r"""
         Add a neuron group to the network
 
@@ -66,7 +66,7 @@ class Network(torch.nn.Module):
         self.adjacency.data = torch.nn.functional.pad(self.adjacency, (0, N, 0, N))
         self.spikes.data = torch.nn.functional.pad(self.spikes, (0, N))
         self.voltage.data = torch.nn.functional.pad(self.voltage, (0, N))
-        self.refractory.data = torch.nn.functional.pad(self.refractory, (0, N))
+        self.neurons._add_group(N)
         if self.learning_rule is not None:
             self.eligibility.data = torch.nn.functional.pad(self.eligibility, (0, N))
 
@@ -121,32 +121,13 @@ class Network(torch.nn.Module):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: A tuple of spikes and voltages tensors
         """
-        # Decay voltages.
-        if self.neurons.voltage_decay_factor is not None:
-            self.voltage = (
-                self.neurons.voltage_decay_factor * (self.voltage - self.neurons.v_rest)
-                + self.neurons.v_rest
-            )
-        # External voltage:
-        if input_voltages is not None:
-            input_voltages.masked_fill_(self.refractory > 0, 0.0)
-            self.voltage += input_voltages
-        # Evoke spikes
-        self.spikes = self.voltage >= self.neurons.v_thresh
-        # External spikes
-        if input_spikes is not None:
-            self.spikes.logical_or_(input_spikes.bool())
-        # update voltages
-        self.voltage += self.spikes.float() @ self.weight  # + self.bias
-        self.voltage.masked_fill_(
-            self.refractory > 0, self.neurons.v_rest
-        )  # reset the voltage of the neurons in the refractory period
-        self.voltage.masked_fill_(
-            self.spikes, self.neurons.v_reset
-        )  # change the voltage of spiked neurons to v_reset
-        # Update refractory timepoints
-        self.refractory -= self.dt
-        self.refractory.masked_fill_(self.spikes, self.neurons.refractory_period)
+        self.spikes, self.voltage = self.neurons(
+            self.weight,
+            self.spikes,
+            self.voltage,
+            input_spikes,
+            input_voltages,
+        )
         # Learning process
         if self.training and self.learning_rule is not None:
             # Apply the learning rule and update weights
@@ -154,8 +135,11 @@ class Network(torch.nn.Module):
 
         return self.spikes, self.voltage
 
-    def reset(self):
+    def reset(self) -> None:
+        r"""
+        Reset the network to its initial state.
+        """
         self.voltage.zero_()
         self.spikes.zero_()
-        self.refractory.zero_()
         self.eligibility.zero_()
+        self.neurons.reset()
